@@ -1,0 +1,87 @@
+from google. colab import files
+uploaded = files.upload()
+import pandas as pd
+
+# Load the dataset
+df = pd.read_csv('creditcard.csv')
+
+# Display basic information
+df.info()
+# Display first few rows
+df.head()
+
+# Statistical summary
+df.describe()
+# Check for missing values
+df.isnull().sum()
+
+# Check for duplicates
+df.duplicated().sum()
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Distribution of 'Amount'
+sns.histplot(df['Amount'], bins=50)
+plt.title('Transaction Amount Distribution')
+plt.show()
+
+# Count of fraud vs. non-fraud
+sns.countplot(x='Class', data=df)
+plt.title('Class Distribution')
+plt.show()
+# Features and target
+X = df.drop('Class', axis=1)
+y = df['Class']
+from sklearn.preprocessing import StandardScaler
+
+# Scale features
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+from sklearn.model_selection import train_test_split
+
+# Split the data
+X_train, X_test, y_train, y_test = train_test_split(
+    X_scaled, y, test_size=0.2, random_state=42, stratify=y)
+from sklearn.ensemble import RandomForestClassifier
+
+# Initialize and train the model
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+model.fit(X_train, y_train)
+from sklearn.metrics import classification_report, confusion_matrix
+
+# Make predictions
+y_pred = model.predict(X_test)
+
+# Display evaluation metrics
+print(confusion_matrix(y_test, y_pred))
+print(classification_report(y_test, y_pred))
+import numpy as np
+
+# Example: Predicting a single transaction
+new_transaction = np.array([X_test[0]])  # Replace with actual data
+prediction = model.predict(new_transaction)
+print("Fraudulent" if prediction[0] == 1 else "Not Fraudulent")
+!pip install gradio
+import gradio as gr
+
+def predict_fraud(*inputs):
+    input_array = np.array(inputs).reshape(1, -1)
+    input_scaled = scaler.transform(input_array)
+    prediction = model.predict(input_scaled)
+    return "Fraudulent" if prediction[0] == 1 else "Not Fraudulent"
+def predict_fraud(*inputs):
+    input_array = np.array(inputs).reshape(1, -1)
+    input_scaled = scaler.transform(input_array)
+    prediction = model.predict(input_scaled)
+    return "Fraudulent" if prediction[0] == 1 else "Not Fraudulent"
+# Assuming the dataset has 30 features excluding 'Class'
+feature_names = df.drop('Class', axis=1).columns.tolist()
+
+iface = gr.Interface(
+    fn=predict_fraud,
+    inputs=[gr.Number(label=feature) for feature in feature_names],
+    outputs="text",
+    title="Credit Card Fraud Detection"
+)
+
+iface.launch()
